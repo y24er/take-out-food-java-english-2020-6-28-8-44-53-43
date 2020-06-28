@@ -14,7 +14,67 @@ public class App {
 
     public String bestCharge(List<String> inputs) {
         //TODO: write code here
+        List<Item> itemList = itemRepository.findAll();
+        List<SalesPromotion> salesPromotionList = salesPromotionRepository.findAll();
+        double price_30 = 0;    //以满30减6的标准算
+        double price_half = 0;  //以半价优惠的标准算
+        double price_save = 0;  //以半价优惠的标准算省下的钱
+        String result = "============= Order details =============\n";
+        String show = "";  //显示半价商品的名称
+        int half_price_num = 0;
+        for (String input : inputs) {
+            boolean flag = false;  //标志当前遍历商品是不是半价商品
+            int num = Integer.parseInt(String.valueOf(input.charAt(input.length() - 1)));//购买的数量
+            for (Item item : itemList) {
+                if (item.getId().equals(input.substring(0, 8))) {  //截取id
+                    result += item.getName() + " x "
+                            + num + " = "
+                            + (int) item.getPrice() * num + " yuan\n";
+                    price_30 += item.getPrice() * num;
+                    for (String relatedItem : salesPromotionList.get(1).getRelatedItems()) {  //get(1)才可获得半价优惠的信息
+                        if (item.getId().equals(relatedItem)) {
+                            price_half += item.getPrice() * num / 2;
+                            price_save += item.getPrice() * num / 2;
+                            flag = true;        //是半价商品
+                            half_price_num++;
+                            if (show.equals(""))        //如果show本身是"",即添加为第一个，不需要在前面加逗号
+                                show += item.getName();
+                            else
+                                show += "，" + item.getName();
+                            break;
+                        }
+                    }
+                    if (!flag) {        //如果上面if不是半价商品flag就会是false，加上原价
+                        price_half += item.getPrice() * num;
+                    }
+                    break;
 
-        return null;
+                }
+            }
+        }
+        result += "-----------------------------------\n";
+        if (price_30 <= 30 && half_price_num == 0) {
+            result += "Total：" + (int) price_30 + " yuan\n" +
+                    "===================================";
+            return result;
+        }
+        if (price_30 >= 30)        //如果满30则减6元
+            price_30 -= 6;
+
+        if (price_30 <= price_half) {
+            result += "Promotion used:\n" +
+                    "满30减6 yuan，saving 6 yuan\n" +
+                    "-----------------------------------\n" +
+                    "Total：" + (int) price_30 + " yuan\n" +
+                    "===================================";
+        } else {
+            result += "Promotion used:\n" +
+                    "Half price for certain dishes (" + show + ")，saving " + (int) price_save + " yuan\n" +
+                    "-----------------------------------\n" +
+                    "Total：" + (int) price_half + " yuan\n" +
+                    "===================================";
+        }
+        return result;
     }
+
 }
